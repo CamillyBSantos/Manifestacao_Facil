@@ -1,6 +1,6 @@
 1) Descrição do Programa:  
 
-- O produto é um sistema básico de controle de manifestações que são registradas na página da empresa contratante, permitindo uma visão das manifestações que estão em aberto/em tratativa/fechado com exibição de RA ID, nome do consumidor, data da manifestação, assunto e status. 
+- O programa é um sistema básico de controle de manifestações que são registradas na página da empresa contratante, permitindo uma visão das manifestações que estão em aberto/em tratativa/fechado com exibição de RA ID, nome do consumidor, data da manifestação, assunto e status. 
 
 - Campo Chave: RA ID.  
 
