@@ -1,0 +1,279 @@
+#Sistema de controle de manifestações do Reclame Aqui- Manifestação Fácil
+
+import os
+import re  
+
+# Sistema de controle de manifestações
+
+# Dicionário para armazenar as manifestações, onde a chave é o RA ID
+manifestações = {}
+
+# Caminho do arquivo de texto
+ARQUIVO_MANIFESTACOES = "manifestacoes.txt"
+
+# Função para limpar a tela
+def limpar_tela():
+    os.system("cls") 
+
+# Tabela de cores 
+cores = {
+    'fim': '\033[0m',
+    'erro': '\033[1;33;41m',
+    'sucesso': '\033[1;30;45m',
+    'inicio': '\033[1;92;40m',
+    'opcoes': '\033[1;37;42m',
+    'negrito': '\033[1m',
+    'verde': '\033[3;30;42m',
+    'cinza': '\033[3;36m'
+}    
+
+# Função para validar se a entrada contém apenas números
+def validar_numeros(entrada, tipo):
+    if tipo == "RA ID":
+        # Aceita apenas números (RA ID)
+        if re.match(r"^\d+$", entrada):  # Usando a string raw (r"")
+            return True
+        else:
+            print(f"{cores['erro']}Erro: O {tipo} deve conter apenas números.{cores['fim']}")
+            return False
+    return True
+
+# Função para validar o formato da data (dd/mm/aaaa)
+def validar_data(data):
+    # Verifica se a data está no formato dd/mm/aaaa
+    if re.match(r"^\d{2}/\d{2}/\d{4}$", data):
+        return True
+    else:
+        print(f"{cores['erro']}Erro: A data deve estar no formato dd/mm/aaaa.{cores['fim']}")
+        return False
+
+# Função para validar se a entrada contém apenas texto (permitindo caracteres especiais e números)
+def validar_texto(entrada, tipo):
+    if tipo == "nome" or tipo == "assunto" or tipo == "status":
+        # Aceita letras, números, espaços e caracteres especiais (acentos, cedilhas, etc.)
+        if re.match(r"^[A-Za-zÀ-ÿ0-9\s]+$", entrada):  # Expressão para letras, números e espaços
+            return True
+        else:
+            print(f"{cores['erro']}Erro: O {tipo} deve conter apenas letras, números e espaços, incluindo acentos e caracteres especiais.{cores['fim']}")
+            return False
+    return True
+
+    
+
+# Função para validar o status (limitado a "Aberto", "Em Tratativa", "Fechado")
+def validar_status(status):
+    status_permitidos = ["Aberto", "Em Tratativa", "Fechado"]
+    if status in status_permitidos:
+        return True
+    else:
+        print(f"{cores['erro']}Erro: O status deve ser 'Aberto', 'Em Tratativa' ou 'Fechado'.{cores['fim']}")
+        return False
+
+# Função para carregar as manifestações do arquivo
+def carregar_manifestacoes():
+    if os.path.exists(ARQUIVO_MANIFESTACOES):
+        with open(ARQUIVO_MANIFESTACOES, "r", encoding="utf-8") as file:
+            linhas = file.readlines()
+            for linha in linhas:
+                dados = linha.strip().split(",")
+                if len(dados) == 5:
+                    ra_id, data, nome, assunto, status = dados
+                    manifestações[ra_id] = {
+                        "data": data,
+                        "nome": nome,
+                        "assunto": assunto,
+                        "status": status
+                    }
+    else:
+        print("Arquivo não encontrado. Iniciando com dados vazios.")
+
+# Função para salvar as manifestações no arquivo
+def salvar_manifestacoes():
+    with open(ARQUIVO_MANIFESTACOES, "w", encoding="utf-8") as file:
+        for ra_id, dados in manifestações.items():
+            file.write(f"{ra_id},{dados['data']},{dados['nome']},{dados['assunto']},{dados['status']}\n")
+
+# Função para adicionar uma nova manifestação
+def incluir_manifestacao():
+    limpar_tela()
+    while True:
+        ra_id = input(f"{cores['negrito']}Digite o RA ID (apenas números): {cores['fim']}").strip()
+        
+        # Verifica se o RA ID já existe no dicionário de manifestações
+        if ra_id in manifestações:
+            print(f"{cores['erro']}Erro: Já existe uma manifestação com esse ID.{cores['fim']}")
+            print(f"{cores['negrito']}Deseja tentar novamente?{cores['fim']}")
+            print(f"{cores['opcoes']}1 - Sim{cores['fim']} | {cores['opcoes']}2 - Não{cores['fim']}")
+            escolha = input("Escolha uma opção: ").strip()
+            if escolha == '2':
+                return  # Retorna ao menu principal se o usuário não quiser tentar novamente
+            elif escolha != '1':
+                print(f"{cores['erro']}Opção inválida. Voltando ao menu principal.{cores['fim']}")
+                return
+        elif validar_numeros(ra_id, "RA ID"):
+            break  # Sai do loop se o RA ID for válido e não existir
+        
+    while True:
+        data = input(f"{cores['negrito']}Digite a data da manifestação (dd/mm/aaaa): {cores['fim']}").strip()
+        if validar_data(data):
+            break
+    
+    while True:
+        nome = input(f"{cores['negrito']}Digite o nome do consumidor (permitido letras, espaços e caracteres especiais): {cores['fim']}").strip()
+        if validar_texto(nome, "nome"):
+            break
+    
+    while True:
+        assunto = input(f"{cores['negrito']}Digite o assunto da manifestação (permitido letras, espaços e caracteres especiais): {cores['fim']}").strip()
+        if validar_texto(assunto, "assunto"):
+            break
+    
+    while True:
+        status = input(f"{cores['negrito']}Digite o status da manifestação (Aberto, Em Tratativa ou Fechado): {cores['fim']}").strip()
+        if validar_status(status):
+            break
+
+    manifestações[ra_id] = {
+        "data": data,
+        "nome": nome,
+        "assunto": assunto,
+        "status": status
+    }
+    print(f"{cores['sucesso']}Manifestação registrada com sucesso.{cores['fim']}")
+    salvar_manifestacoes()  # Salva as alterações no arquivo
+    input(f"{cores['inicio']}Pressione Enter para voltar ao menu...{cores['fim']}")
+
+# Função para alterar os dados de uma manifestação baseado no RA ID
+def alterar_manifestacao():
+    limpar_tela()
+    
+    while True:
+        ra_id = input(f"{cores['negrito']}Digite o RA ID da manifestação a ser alterada: {cores['fim']}")
+        
+        if ra_id not in manifestações:
+            print(f"{cores['erro']}Erro: Manifestação não encontrada com este RA ID!{cores['fim']}")
+            continuar = input("Deseja tentar novamente? (Escreva Sim ou Não): ").strip().lower()
+            if continuar != 'Sim':
+                break  
+        else:
+            print(f"{cores['sucesso']}Manifestação encontrada. O que deseja alterar?{cores['fim']}")
+            
+            nome = input(f"{cores['negrito']}Nome atual ({manifestações[ra_id]['nome']}): ")
+            while not validar_texto(nome, "nome"):
+                nome = input(f"Nome atual ({manifestações[ra_id]['nome']}): ")
+
+            data = input(f"Data atual ({manifestações[ra_id]['data']}): ")
+            while not validar_data(data):
+                data = input(f"Data atual ({manifestações[ra_id]['data']}): ")
+
+            assunto = input(f"Assunto atual ({manifestações[ra_id]['assunto']}): ")
+            while not validar_texto(assunto, "assunto"):
+                assunto = input(f"Assunto atual ({manifestações[ra_id]['assunto']}): ")
+
+            status = input(f"Status atual ({manifestações[ra_id]['status']}): ")
+            while not validar_status(status):
+                status = input(f"Status atual ({manifestações[ra_id]['status']}): {cores['fim']}")
+
+            manifestações[ra_id] = {
+                "data": data,
+                "nome": nome,
+                "assunto": assunto,
+                "status": status
+            }
+
+            print(f"{cores['sucesso']}Manifestação alterada com sucesso.{cores['fim']}")
+            salvar_manifestacoes() 
+            input(f"{cores['verde']}Pressione Enter para voltar ao menu...{cores['fim']}")
+            break  
+
+# Função para excluir uma manifestação baseado no RA ID
+def excluir_manifestacao():
+    limpar_tela()
+    ra_id = input(f"{cores['negrito']}Digite o RA ID da manifestação a ser excluída: {cores['fim']}")
+    if ra_id not in manifestações:
+        print(f"{cores['erro']}Erro: Manifestação não encontrada com este RA ID!{cores['fim']}")
+        return
+    del manifestações[ra_id]
+    print(f"{cores['sucesso']}Manifestação excluída com sucesso.{cores['fim']}")
+    salvar_manifestacoes()  # Salvar as alterações no arquivo
+    input(f"{cores['verde']}Pressione Enter para voltar ao menu...{cores['fim']}")
+
+# Função para exibir o relatório geral de todas as manifestações
+def relatorio_geral():
+    limpar_tela()
+    if not manifestações:
+        print(f"{cores['erro']}Não há manifestações registradas.{cores['fim']}")
+        return
+    print(f"{cores['negrito']}\nRelatório Geral de Manifestações:{cores['fim']}")
+    for ra_id, dados in manifestações.items():
+        print(f"{cores['opcoes']}RA ID: {ra_id}{cores['fim']}")
+        print(f"{cores['opcoes']}Data: {dados['data']}{cores['fim']}")
+        print(f"{cores['opcoes']}Nome: {dados['nome']}{cores['fim']}")
+        print(f"{cores['opcoes']}Assunto: {dados['assunto']}{cores['fim']}")
+        print(f"{cores['opcoes']}Status: {dados['status']}{cores['fim']}")
+        print("-" * 40)
+    input(f"{cores['verde']}Pressione Enter para voltar ao menu...{cores['fim']}")
+
+# Função para realizar pesquisa parcial por RA ID
+def pesquisa_parcial():
+    limpar_tela()
+    pesquisa = input("Digite o RA ID para pesquisa parcial: ").strip()
+    
+    # Filtra as manifestações que contêm o texto pesquisado no RA ID
+    resultados = {ra_id: dados for ra_id, dados in manifestações.items() if pesquisa in ra_id}
+    
+    if not resultados:
+        print("\nNenhuma manifestação encontrada com o RA ID informado.")
+        input("Pressione Enter para voltar ao menu...")
+        return
+    
+    # Exibe os resultados da pesquisa
+    print("\nPesquisa Parcial de Manifestações:")
+    for ra_id, dados in resultados.items():
+        print(f"RA ID: {ra_id}")
+        print(f"Data: {dados.get('data', 'N/A')}")
+        print(f"Nome: {dados.get('nome', 'N/A')}")
+        print(f"Assunto: {dados.get('assunto', 'N/A')}")
+        print(f"Status: {dados.get('status', 'N/A')}")
+        print("-" * 40)
+    
+    input(f"{cores['verde']}Pressione Enter para voltar ao menu...{cores['fim']}")
+
+# Função para exibir o menu principal e receber a escolha do usuário
+def exibir_menu():
+    while True:
+        limpar_tela()
+        print(f'''{cores['inicio']}\nBem vindo ao Manifesção Fácil!
+O seu sistema de controle de manifestações de mandeira Fácil e Prática!{cores['fim']}''')
+        input(f"{cores['inicio']}Pressione Enter para Iniciar{cores['fim']}")
+        print("-" * 43)
+        print(f'''{cores['opcoes']}|1 - Incluir nova manifestação            |
+|2 - Alterar manifestação baseado no RA ID|
+|3 - Excluir manifestação baseado no RA ID|
+|4 - Relatório Geral                      |
+|5 - Pesquisa Parcial por RA ID           |
+|6 - Sair                                 |{cores['fim']}''')
+        print("-" * 43)
+        opcao = input(f"{cores['negrito']}Escolha uma opção (1-6): {cores['fim']}")
+
+        if opcao == '1':
+            incluir_manifestacao()
+        elif opcao == '2':
+            alterar_manifestacao()
+        elif opcao == '3':
+            excluir_manifestacao()
+        elif opcao == '4':
+            relatorio_geral()
+        elif opcao == '5':
+            pesquisa_parcial()
+        elif opcao == '6':
+            print("Saindo do sistema...")
+            break
+        else:
+            print(f"{cores['erro']}Opção inválida. Tente novamente.{cores['fim']}")
+            input(f"{cores['verde']}Pressione Enter para voltar ao menu...{cores['fim']}")
+
+# Chamada da função para carregar as manifestações do arquivo ao iniciar o programa
+if __name__ == "__main__":
+    carregar_manifestacoes()
+    exibir_menu()
